@@ -1,0 +1,107 @@
+# ============================================================================
+# Smartsales Multi-Agent Assistant — Configuration
+#
+# FMCG / CPG Sales Copilot for field sales teams, ASMs, and RSMs.
+# Workspace: fevm-serverless-stable-tcrn2v
+# ============================================================================
+
+orchestrator:
+  name: "Smartsales Assistant"
+  model: "databricks-claude-sonnet-4-5"
+  instructions: |
+    You are the Smartsales Assistant — an AI copilot for FMCG/CPG field sales teams.
+    You help sales reps, Area Sales Managers (ASMs), and Regional Sales Managers (RSMs)
+    make data-driven decisions about territory management, competitive positioning,
+    and trade promotions.
+
+    ROUTING GUIDELINES:
+    - For structured data queries (sales figures, distributor data, retailer POS,
+      territory mappings, promotion details, SKU lookups) → use sales_data_analyst
+    - For sales knowledge, policies, playbooks, and competitive intelligence → use smartsales
+    - For field visit reports and ground-level observations → use field_reports
+    - For shelf share gaps and competitive positioning analysis → use margin_gap_analyzer
+    - For territory prioritization and action planning → use territory_prioritizer
+
+    RESPONSE GUIDELINES:
+    - Always ground answers in data — cite the source tool
+    - When asked about a territory, combine structured data with field reports for context
+    - For action recommendations, use territory_prioritizer and margin_gap_analyzer
+    - Present numbers clearly with INR formatting where applicable
+    - If a query spans multiple tools, call them sequentially and synthesize a unified answer
+
+subagents:
+
+  # ── Genie: structured data queries across all tables ───────────────────
+  - name: sales_data_analyst
+    type: genie
+    space_id: "01f128f75c081a278003971a725ddfe7"
+    description: >
+      Query structured sales data across distributor sales, retailer POS,
+      SKU master, territory mappings, and trade promotions.
+      Use for: sales revenue lookups, units sold, top/bottom SKUs, distributor
+      performance, retailer shelf share data, territory-rep mappings, promotion
+      effectiveness, regional comparisons, and any data aggregation or filtering.
+      Tables available: distributor_sales, retailer_pos, sku_master,
+      territory_mapping, trade_promotions, field_reports.
+
+  # ── Vector Search: sales knowledge (created by setup-vector-search) ────
+  - name: smartsales
+    type: vector_search
+    index_name: "serverless_stable_tcrn2v_catalog.multiagent_sales_copilot_tbl.smartsales_index"
+    columns: ["content", "source"]
+    num_results: 5
+    description: >
+      Search sales knowledge documents including policies, product launch
+      playbooks, quarterly business reviews, retailer engagement guides,
+      route-to-market strategies, and competitive intelligence reports.
+      Use for: policy questions, approval thresholds, compliance rules,
+      standard operating procedures, launch plans, and strategic guidelines.
+
+  # ── Vector Search: field sales reports ─────────────────────────────────
+  - name: field_reports
+    type: vector_search
+    index_name: "serverless_stable_tcrn2v_catalog.multiagent_sales_copilot.field_reports_index"
+    columns: ["content", "sales_rep", "territory", "date", "report_type"]
+    num_results: 5
+    description: >
+      Search field visit reports written by sales representatives after
+      retailer and distributor visits. Contains ground-level observations
+      about shelf placement, retailer sentiment, stock-outs, competitor
+      activity, and local market conditions.
+      Use for: qualitative insights, rep observations, territory ground truth,
+      and context behind the numbers.
+
+  # ── UC Function: margin gap / shelf share analysis ─────────────────────
+  - name: margin_gap_analyzer
+    type: uc_function
+    function: "serverless_stable_tcrn2v_catalog.multiagent_sales_copilot_tbl.calculate_margin_gap"
+    parameters:
+      - name: input_category
+        type: string
+      - name: input_district
+        type: string
+    description: >
+      Calculate shelf share gaps between our SKUs and competitor SKUs for a
+      given category and district. Returns our vs competitor shelf share
+      percentage, units sold comparison, and actionable recommendations
+      (Urgent Action / Improve Presence / Maintain Position).
+      Use when asked about: margin gaps, shelf share issues, competitive
+      positioning in a specific territory, or why we're losing share.
+
+  # ── UC Function: territory priority scoring ────────────────────────────
+  - name: territory_prioritizer
+    type: uc_function
+    function: "serverless_stable_tcrn2v_catalog.multiagent_sales_copilot_tbl.territory_prioritizer"
+    parameters:
+      - name: input_region
+        type: string
+      - name: input_category
+        type: string
+    description: >
+      Score and rank territories by urgency for sales action. Combines shelf
+      share data, distributor sales, and trade promotion effectiveness to
+      produce a priority score (0-100). Returns priority label (CRITICAL /
+      HIGH / MEDIUM / LOW), assigned sales rep and ASM, and a specific
+      action plan for each territory.
+      Use when asked about: which territories need attention, where to deploy
+      reps, which districts are underperforming, or territory action plans.

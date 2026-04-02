@@ -1,0 +1,48 @@
+bundle:
+  name: multiagent_framework_memory
+
+resources:
+  apps:
+    multiagent_app:
+      name: "smartsales-memory"
+      description: "Smartsales All-MCP + Memory — conversation history + user preferences"
+      source_code_path: ./
+      config:
+        command: ["uvicorn", "agent_server.start_server:app", "--host", "0.0.0.0", "--port", "8000"]
+        env:
+          - name: MLFLOW_TRACKING_URI
+            value: "databricks"
+          - name: MLFLOW_REGISTRY_URI
+            value: "databricks-uc"
+          - name: MLFLOW_EXPERIMENT_ID
+            value_from: "experiment"
+          - name: DATABRICKS_WAREHOUSE_ID
+            value: "91dbe14a27ddabad"
+          - name: COMPANY_NAME
+            value: "Smartsales Memory"
+          - name: LAKEBASE_AUTOSCALING_PROJECT
+            value: "my-lakebase"
+          - name: LAKEBASE_AUTOSCALING_BRANCH
+            value: "production"
+
+      resources:
+        - name: "experiment"
+          experiment:
+            experiment_id: "404195609266515"
+            permission: "CAN_MANAGE"
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://fevm-serverless-stable-tcrn2v.cloud.databricks.com
+
+  prod:
+    mode: production
+    workspace:
+      host: https://fevm-serverless-stable-tcrn2v.cloud.databricks.com
+    resources:
+      apps:
+        multiagent_app:
+          name: smartsales-memory
