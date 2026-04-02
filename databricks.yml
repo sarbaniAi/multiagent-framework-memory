@@ -24,6 +24,10 @@ resources:
             value: "my-lakebase"
           - name: LAKEBASE_AUTOSCALING_BRANCH
             value: "production"
+          - name: UC_CATALOG
+            value: "serverless_stable_tcrn2v_catalog"
+          - name: UC_SCHEMA
+            value: "multiagent_sales_copilot_tbl"
 
       resources:
         - name: "experiment"

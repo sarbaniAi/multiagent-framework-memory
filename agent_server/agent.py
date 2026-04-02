@@ -14,13 +14,13 @@ Supported subagent types:
 
 Memory:
   - Short-term:  Conversation history via Lakebase (AsyncDatabricksSession)
-  - Long-term:   User facts/preferences via Lakebase (AsyncDatabricksStore + embeddings)
+  - Long-term:   User facts/preferences via Lakebase (direct SQL, OpenAI SDK pattern)
 
 Both memory types are optional — enabled by setting LAKEBASE_INSTANCE_NAME
 or LAKEBASE_AUTOSCALING_PROJECT + LAKEBASE_AUTOSCALING_BRANCH in .env.
 
 Built from: databricks/app-templates (agent-openai-agents-sdk-multiagent + short-term-memory)
-Long-term memory ported from: agent-langgraph-long-term-memory
+Long-term memory: OpenAI SDK state-based pattern with Lakebase SQL persistence
 """
 
 import litellm
@@ -231,6 +231,12 @@ async def stream_handler(request: ResponsesAgentRequest) -> AsyncGenerator[Respo
 
     user_id = get_user_id(request)
     set_current_user_id(user_id)
+
+    if _long_term:
+        try:
+            await get_store()
+        except Exception as e:
+            logger.warning("Long-term memory store init failed: %s", e)
 
     async with AsyncExitStack() as stack:
         mcp_servers = []

@@ -3,8 +3,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 from mlflow.genai.agent_server import AgentServer, setup_mlflow_git_based_version_tracking
 
-# Load env vars from .env before importing the agent for proper auth
-load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env", override=True)
+# Load env vars — try .env first (local dev), fall back to env.config (deployed)
+_root = Path(__file__).parent.parent
+load_dotenv(dotenv_path=_root / ".env", override=True)
+load_dotenv(dotenv_path=_root / "env.config", override=True)
 
 # Need to import the agent to register the functions with the server
 import agent_server.agent  # noqa: E402

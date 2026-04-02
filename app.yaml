@@ -5,16 +5,17 @@ env:
     value: "databricks"
   - name: MLFLOW_REGISTRY_URI
     value: "databricks-uc"
-  - name: DATABRICKS_WAREHOUSE_ID
-    value: ""                              # CHANGE: your warehouse ID
   - name: MLFLOW_EXPERIMENT_ID
-    value: ""                              # CHANGE: your experiment ID
+    value: "404195609266515"
+  - name: DATABRICKS_WAREHOUSE_ID
+    value: "91dbe14a27ddabad"
   - name: COMPANY_NAME
-    value: "Multi-Agent Assistant"         # CHANGE: your company/app name
-  # Add any env vars referenced in agents.yaml:
-  # - name: GENIE_SPACE_ID
-  #   value: ""
-  # - name: UC_CATALOG
-  #   value: ""
-  # - name: UC_SCHEMA
-  #   value: ""
+    value: "Smartsales Memory"
+  - name: LAKEBASE_AUTOSCALING_PROJECT
+    value: "my-lakebase"
+  - name: LAKEBASE_AUTOSCALING_BRANCH
+    value: "production"
+  - name: UC_CATALOG
+    value: "serverless_stable_tcrn2v_catalog"
+  - name: UC_SCHEMA
+    value: "multiagent_sales_copilot_tbl"
