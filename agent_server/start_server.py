@@ -88,7 +88,8 @@ const chat=document.getElementById('chat'),input=document.getElementById('input'
 
 // Session + user tracking for memory
 let sessionId = 'session-' + crypto.randomUUID();
-let userId = null;
+let userId = localStorage.getItem('agent_user_id');
+if(!userId){userId=prompt('Enter your user ID (e.g. your email):');if(userId)localStorage.setItem('agent_user_id',userId);}
 
 function addMsg(role,content,isHtml){
   const d=document.createElement('div');d.className='msg '+role;
