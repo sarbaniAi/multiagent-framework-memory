@@ -84,9 +84,14 @@ header .badge{font-size:9px;font-weight:700;color:#e84d31;background:rgba(232,77
 <script>
 marked.setOptions({breaks:true,gfm:true});
 const chat=document.getElementById('chat'),input=document.getElementById('input'),btn=document.getElementById('btn');
+
+// Session + user tracking for memory
+let sessionId = 'session-' + crypto.randomUUID();
+let userId = null;
+
 function addMsg(role,content,isHtml){
   const d=document.createElement('div');d.className='msg '+role;
-  if(isHtml)d.innerHTML=content;else d.textContent=content;
+  if(isHtml)d.innerHTML=DOMPurify.sanitize(content);else d.textContent=content;
   chat.appendChild(d);chat.scrollTop=chat.scrollHeight;return d;
 }
 async function send(){
@@ -95,17 +100,24 @@ async function send(){
   addMsg('user',q,false);
   const t=addMsg('assistant','Thinking...',false);t.classList.add('typing');
   try{
+    const payload={input:[{role:'user',content:q}],custom_inputs:{session_id:sessionId}};
+    if(userId)payload.custom_inputs.user_id=userId;
     const r=await fetch('/invocations',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({input:[{role:'user',content:q}]})});
+      body:JSON.stringify(payload)});
     const d=await r.json();t.classList.remove('typing');
     if(!r.ok){t.textContent=d.detail||'Error: '+r.status;t.classList.add('error');btn.disabled=false;return;}
+    // Track session_id and user_id from response
+    if(d.custom_outputs){
+      if(d.custom_outputs.session_id)sessionId=d.custom_outputs.session_id;
+      if(d.custom_outputs.user_id)userId=d.custom_outputs.user_id;
+    }
     let text='';
     for(const item of (d.output||[])){
       const c=item.content;
       if(typeof c==='string'&&c)text+=c;
       else if(Array.isArray(c))for(const x of c){if(x.text)text+=x.text;}
     }
-    t.innerHTML=marked.parse(text||JSON.stringify(d.output,null,2));
+    t.innerHTML=DOMPurify.sanitize(marked.parse(text||JSON.stringify(d.output,null,2)));
   }catch(e){t.classList.remove('typing');t.textContent='Error: '+e.message;t.classList.add('error');}
   btn.disabled=false;input.focus();
 }
